@@ -1,0 +1,39 @@
+#Samples *_R1_001.fastq.gz *_R2_001.fastq.gz
+#All steps shown for "H1M1", steps reiterated (or looped) for others.
+
+#Single Step trim
+module load trimmomatic
+trimmomatic PE -phred33 H1M1_R1_001.fastq.gz H1M1_R2_001.fastq.gz H1M1_Paired_1.fq.gz H1M1_Broken_1.fq.gz H1M1_Paired_2.fq.gz \
+H1M1_Broken_2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+
+#Install and run bwameth and methyldackel in a conda environment
+module load miniconda
+conda create -n bwameth
+conda activate bwameth
+conda install -c bioconda bwameth
+conda install -c bioconda methyldackel
+
+#Load modules for other tools if on cluster
+module load bwa
+module load samtools
+module load gatk
+
+#Index the reference genome with bwameth
+bwameth.py index Genomev03.fasta
+
+#Align to reference genome
+bwameth.py --reference Genomev03.fasta H1M1_Paired_1.fq.gz H1M1_Paired_2.fq.gz -t 12 | samtools view -b - > H1M1_meth.bam
+
+#Sort, mark, remove duplicates, and index with gatk/picard
+gatk SortSam -INPUT H1M1_meth.bam -OUTPUT H1M1_meth.sorted.bam -SORT_ORDER coordinate
+gatk MarkDuplicates -INPUT H1M1_meth.sorted.bam -OUTPUT  H1M1_meth.sorted.dup.bam --REMOVE_DUPLICATES TRUE -METRICS_FILE metrics.txt
+gatk BuildBamIndex -INPUT H1M1_meth.sorted.dup.bam
+
+#Call methylation with MethylDackel, using maxVariantFrac and minOppositeDepth to remove possible SNPs
+#Optionsscribed here: https://github.com/dpryan79/MethylDackel
+
+MethylDackel extract Genomev03.fasta H1M1_meth.sorted.dup.bam --maxVariantFrac 0.25 --minOppositeDepth 2 --mergeContext
+
+
+
+
