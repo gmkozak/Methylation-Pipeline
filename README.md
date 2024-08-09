@@ -5,4 +5,4 @@ Pipeline A uses Trimmomatic, bwa-meth, and MethylDackel.
 
 Pipeline B using Trim Galore and Biscuit.
 
-Differential methylation calling from bedgraphs is performed in R.
+Differential methylation calling from bedgraphs is performed in R using methylSig and bsseq.
