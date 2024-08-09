@@ -3,9 +3,11 @@
 library(bsseq)
 library(methylSig)
 
-#Place all Male bedGraphs to be analyzed in a single working directory (MethylMWD)
+#Place all Male .bedGraph (pipeline A) or .cov (pipeline B) to be analyzed in a single working directory (MethylMWD)
 setwd('MethylMWD')
 files <- list.files(pattern = ".bedGraph")
+#If pipeline B change to
+#files <- list.files(pattern = ".cov")
 
 #Create a phenotype file (PM3) for Males
 Temp1<-c("H","H","H","H","H","H","H")
@@ -81,10 +83,11 @@ diff_simple_MRemFin4<-subset(diff_simple_MRemFin,diff_simple_MRemFin$fdr2<0.05)
 write.csv(diff_simple_MRemFin4,file="Male4_7_zerorem_fdr_05.csv", row.names=FALSE)
 
 
-#Place all Female bedGraphs to be analyzed in a single working directory (MethylFWD)
+#Place all Female bedGraphs .bedGraph (pipeline A) or .cov (pipeline B) to be analyzed in a single working directory (MethylFWD)
 setwd('MethylFWD')
 files <- list.files(pattern = ".bedGraph")
-
+#If pipeline B, change to: 
+#files <- list.files(pattern = ".cov")
 
 #Create a phenotype file (PF3) for Females
 Temp1<-c("H","H","H","H","H","H","H")
