@@ -1,5 +1,5 @@
 #Samples *_R1_001.fastq.gz *_R2_001.fastq.gz
-#All steps shown for "H1M1", steps reiterated (or looped) for others.
+#All steps shown for sample "H1M1", steps reiterate or loop steps for all other.
 
 #Single Step trim
 module load trimmomatic
@@ -13,16 +13,16 @@ conda activate bwameth
 conda install -c bioconda bwameth
 conda install -c bioconda methyldackel
 
-#Load modules for other tools if on cluster
+#Load modules for other tools if on a cluster
 module load bwa
 module load samtools
 module load gatk
 
 #Index the reference genome with bwameth
-bwameth.py index Genomev03.fasta
+bwameth.py index Genome3.fasta
 
 #Align to reference genome
-bwameth.py --reference Genomev03.fasta H1M1_Paired_1.fq.gz H1M1_Paired_2.fq.gz -t 12 | samtools view -b - > H1M1_meth.bam
+bwameth.py --reference Genome3.fasta H1M1_Paired_1.fq.gz H1M1_Paired_2.fq.gz -t 12 | samtools view -b - > H1M1_meth.bam
 
 #Sort, mark, remove duplicates, and index with gatk/picard
 gatk SortSam -INPUT H1M1_meth.bam -OUTPUT H1M1_meth.sorted.bam -SORT_ORDER coordinate
@@ -30,9 +30,11 @@ gatk MarkDuplicates -INPUT H1M1_meth.sorted.bam -OUTPUT  H1M1_meth.sorted.dup.ba
 gatk BuildBamIndex -INPUT H1M1_meth.sorted.dup.bam
 
 #Call methylation with MethylDackel, using maxVariantFrac and minOppositeDepth to remove possible SNPs
-#Optionsscribed here: https://github.com/dpryan79/MethylDackel
+#Options Desscribed here: https://github.com/dpryan79/MethylDackel
+#Results in a bedgraph file
 
-MethylDackel extract Genomev03.fasta H1M1_meth.sorted.dup.bam --maxVariantFrac 0.25 --minOppositeDepth 2 --mergeContext
+MethylDackel extract Genome3.fasta H1M1_meth.sorted.dup.bam --maxVariantFrac 0.25 --minOppositeDepth 2 --mergeContext
+
 
 
 
