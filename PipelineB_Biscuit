@@ -1,0 +1,41 @@
+#Pipeline B: Trim Galore and Biscuit
+
+#Step 1: Create a conda environment and install needed packages
+module load miniconda
+conda create -n biscuit
+conda activate biscuit
+conda install -c biscuit
+conda install -c bioconda trim-galore
+conda install -c bioconda dupsifter
+conda install -c bioconda htslib
+
+#Step 2: Load modules if on a cluster
+module load bwa
+module load cutadapt
+module load fastqc
+
+#Step 3:index Genome
+biscuit index Genome3.fasta 
+
+#Samples *_R1_001.fastq.gz *_R2_001.fastq.gz
+#All subsequent steps shown for H1M1, steps reiterated (or looped) for others.
+
+#Step 4: Trim with Trim Galore 
+trim_galore --illumina --length 36 --trim-n --paired H1M1_R1_001.fastq.gz H1M1_R2_001.fastq.gz 
+
+#Step 5: Align with biscuit
+biscuit align -@ 20 Genome.fasta H1M1_R1_001_val_1.fq.gz H1M1_R2_001_val_1.fq.gz | \
+dupsifter Genome3.fasta --remove-dups | \
+samtools sort -o TrimGH1M1_BIC.bam -O BAM - 
+
+#Step 6: Create vcf file
+samtools index  TrimGH1M1_BIC.bam
+biscuit pileup -@ 20 -o  TrimGH1M1_BIC.p.vcf Genome3.fasta TrimGH1M1_BIC.bam
+bgzip -@ 20 TrimGH1M1_BIC.p.vcf
+tabix -p vcf TrimGH1M1_BIC.p.vcf.gz
+
+#Step 7: Convert to bed and create cov file
+#Adapted from https://huishenlab.github.io/biscuit/docs/methylextraction.html
+biscuit vcf2bed TrimGH1M1_BIC.p.vcf.gz | \
+biscuit mergecg -c Genome3.fasta - | \
+awk -v OFS='\t' '{ print $1, $2+1, $3-1, $4, $5, $6 }' > TrimGH1M1_BIC_m_u.cov
