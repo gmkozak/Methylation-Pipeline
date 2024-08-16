@@ -59,7 +59,7 @@ diff_fit_simple = diff_dss_fit(
 #Set a simple contrast
 simple_contrast = matrix(c(0,1), ncol = 1)
 
-#Compare methylation among temperature groups, with H set to case
+#Compare methylation among temperature groups, with H set to case, L set to control
 diff_simple_M = diff_dss_test(
     bs = bsfin,
     diff_fit = diff_fit_simple,
@@ -139,7 +139,7 @@ diff_fit_simpleF = diff_dss_fit(
 #Set a simple contrast
 simple_contrast = matrix(c(0,1), ncol = 1)
 
-#Compare methylation among tempearture groups, with H set to case
+#Compare methylation among temperature groups, with H set to case, L set to control
 diff_simple_F = diff_dss_test(
     bs = bsfinfem,
     diff_fit = diff_fit_simpleF,
@@ -159,5 +159,5 @@ fdr3<-p.adjust(diff_simple_FRem$pvalue, method = "fdr")
 diff_simple_FRemFin<-as.data.frame(cbind(diff_simple_FRem,fdr3))
 write.csv(diff_simple_FRemFin,file="Female4_7_zerorem_fdr.csv", row.names=FALSE)
 
-diff_simple_FRemFin4<-subset(diff_simple_FRemFin,diff_simple_FRemFin$fdr2<0.05)
+diff_simple_FRemFin4<-subset(diff_simple_FRemFin,diff_simple_FRemFin$fdr3<0.05)
 write.csv(diff_simple_FRemFin4,file="Female4_7_zerorem_fdr_05.csv", row.names=FALSE)
