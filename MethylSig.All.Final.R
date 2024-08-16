@@ -59,7 +59,7 @@ diff_fit_simple = diff_dss_fit(
 #Set a simple contrast
 simple_contrast = matrix(c(0,1), ncol = 1)
 
-#Compare methylation among tempearture groups, with H set to case
+#Compare methylation among temperature groups, with H set to case
 diff_simple_M = diff_dss_test(
     bs = bsfin,
     diff_fit = diff_fit_simple,
