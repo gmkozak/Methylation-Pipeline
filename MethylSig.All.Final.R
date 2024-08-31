@@ -3,6 +3,9 @@
 library(bsseq)
 library(methylSig)
 
+#Depending on version of Bioconductor and matrixStats, may need to run the option below for matrixStats
+#options(matrixStats.useNames.NA = "deprecated")
+
 #Place all Male .bedGraph (pipeline A) or .cov (pipeline B) to be analyzed in a single working directory (MethylMWD)
 setwd('MethylMWD')
 files <- list.files(pattern = ".bedGraph")
@@ -68,11 +71,15 @@ diff_simple_M = diff_dss_test(
     methylation_groups = c('case' = 'H', 'control' = 'L'))
 write.csv(diff_simple_M, file="MethylOutputMales.csv")
 
+#Pull methylation counts for each male
+G1<-getMeth(bsfin, type = "raw")    
+diff_simple_M1<-cbind.data.frame(diff_simple_M,G1)
+
 #Remove those windows with 0 difference in methylation AND 0 methylation in both treatments (case/control)
-diff_simple_M1<-as.data.frame(diff_simple_M)
 diff_simple_M1$absMD<-abs(diff_simple_M1$meth_diff)
 diff_simple_M1$All<-diff_simple_M1$meth_case+diff_simple_M1$meth_control+diff_simple_M1$absMD
 diff_simple_MRem<-subset(diff_simple_M1,diff_simple_M1$All!=0)
+
 
 #Perform fdr adjustment after removal of windows with 0 methylation
 fdr2<-p.adjust(diff_simple_MRem$pvalue, method = "fdr")
@@ -148,8 +155,11 @@ diff_simple_F = diff_dss_test(
     methylation_groups = c('case' = 'H', 'control' = 'L'))
 write.csv(diff_simple_F, file="MethylOutputFemales.csv")
 
+#Pull methylation counts for each fe,male
+G2<-getMeth(bsfinfem, type = "raw")    
+diff_simple_F1<-cbind.data.frame(diff_simple_F,G2)
+
 #Remove those windows with 0 difference in methylation AND 0 methylation in both treatments (case/control)
-diff_simple_F1<-as.data.frame(diff_simple_F)
 diff_simple_F1$absMD<-abs(diff_simple_F1$meth_diff)
 diff_simple_F1$All<-diff_simple_F1$meth_case+diff_simple_F1$meth_control+diff_simple_F1$absMD
 diff_simple_FRem<-subset(diff_simple_F1,diff_simple_F1$All!=0)
@@ -161,3 +171,73 @@ write.csv(diff_simple_FRemFin,file="Female4_7_zerorem_fdr.csv", row.names=FALSE)
 
 diff_simple_FRemFin4<-subset(diff_simple_FRemFin,diff_simple_FRemFin$fdr3<0.05)
 write.csv(diff_simple_FRemFin4,file="Female4_7_zerorem_fdr_05.csv", row.names=FALSE)
+
+
+#Sex differences in methylation in heat
+setwd('MethylSex')
+files <- list.files(pattern = ".bedGraph")
+
+#Create a phenotype file (PMFH3) for all Heat
+Temp1<-c("H","H","H","H","H","H","H")
+Sex1<-c("F","F","F","F","F","F","F")
+Sex2<-c("M","M","M","M","M","M","M")
+P1<-cbind.data.frame(Temp1,Sex1)
+P2<-cbind.data.frame(Temp1,Sex2)
+colnames(P2)<-c("Temp1", "Sex1")
+PMFH3<-rbind(P1,P2)
+rownames(PMFH3)<-c("HF1","HF2","HF3","HF4","HF5", "HF6","HF7","LHHM1","HM2","HM3","M4","M5", "M6","HM7")
+PMFH3
+
+bsmf1 = bsseq::read.bismark(
+    files = files,
+    colData = PMFH3,
+    rmZeroCov = FALSE,
+    strandCollapse = FALSE)
+
+#Filter by min and max coverage
+bsmf2 =filter_loci_by_coverage(bsmf1, min_count = 10, max_count = 200)
+
+#Retain only sites with sufficient coverage in at least 4 individuals per group
+bsmf3 = filter_loci_by_group_coverage(
+    bs = bsmf2,
+    group_column = 'Sex1',
+    c('M' = 4, 'F' = 4))
+
+#Tile methylation across 100 bp windows
+bsmf4 = tile_by_windows(bs = bsmf3, win_size = 100)
+
+bsfinmfh = filter_loci_by_group_coverage(
+    bs = bsmf4,
+    group_column = 'Sex1',
+    c('M' = 4, 'F' = 4))
+    
+diff_fit_simple = diff_dss_fit(
+    bs = bsfinmfh,
+    design = bsseq::pData(bsfinmfh),
+    formula = as.formula('~ Sex1'))
+
+simple_contrast = matrix(c(0,1), ncol = 1)
+
+diff_simple_MFH = diff_dss_test(
+    bs = bsfinmfh,
+    diff_fit = diff_fit_simple,
+    contrast = simple_contrast,
+    methylation_group_column = 'Sex1',
+    methylation_groups = c('case' = 'M', 'control' = 'F'))
+ 
+#Get raw mehtylation counts and remove zeros   
+G3<-getMeth(bsfinmfh, type = "raw")    
+diff_simple_MFH1<-cbind.data.frame(diff_simple_MFH,G3)
+diff_simple_MFH1$absMD<-abs(diff_simple_MFH3$meth_diff)
+diff_simple_MFH1$All<-diff_simple_MFH3$meth_case+diff_simple_MFH3$meth_control+diff_simple_MFH3$absMD
+diff_simple_MRem<-subset(diff_simple_M1,diff_simple_M1$All!=0)
+
+#Perform fdr adjustment after removal of windows with 0 methylation
+fdr2<-p.adjust(diff_simple_MRem$pvalue, method = "fdr")
+diff_simple_MRemFin<-as.data.frame(cbind(diff_simple_MFH3,fdr2))
+write.csv(diff_simple_MRemFin,file="HMv&4_7_zerorem_fdr_2R.csv", row.names=FALSE)
+
+diff_simple_MRemFin4<-subset(diff_simple_MRemFin,diff_simple_MRemFin$fdr2<0.05)
+write.csv(diff_simple_MRemFin4,file="HMv&4_7_zerorem_fdr_2R_05.csv", row.names=FALSE)
+
+
