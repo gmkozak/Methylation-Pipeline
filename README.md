@@ -6,3 +6,5 @@ Pipeline A uses Trimmomatic, bwa-meth, and MethylDackel.
 Pipeline B uses Trim Galore and Biscuit.
 
 Differential methylation calling from bedGraph files (Pipeline A) or cov files (Pipeline B) is performed in R using code in the MethylSig.All.Final.R
+
+KEGG and GO analysis were performed in R using code in the KEGG.GO.Analysis.Code.R
